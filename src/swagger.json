@@ -1,0 +1,550 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "RescueMesh Notification Service API",
+    "version": "1.0.0",
+    "description": "Notification & Communication Service for sending SMS, push notifications, and other communication channels",
+    "contact": {
+      "name": "RescueMesh Team"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3006",
+      "description": "Local development server"
+    },
+    {
+      "url": "http://notification-service:3006",
+      "description": "Docker container"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Notifications",
+      "description": "Notification operations"
+    },
+    {
+      "name": "Health",
+      "description": "Health check"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check",
+        "description": "Check the health status of the notification service",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service is unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/send": {
+      "post": {
+        "tags": ["Notifications"],
+        "summary": "Send a notification",
+        "description": "Send a notification through one or more channels (SMS, push, WhatsApp)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationRequest"
+              },
+              "example": {
+                "recipientId": "user-789",
+                "recipientPhone": "+1234567890",
+                "channels": ["sms", "push"],
+                "type": "sos_match",
+                "priority": "high",
+                "data": {
+                  "requestId": "sos-123",
+                  "message": "You have been matched to an emergency request",
+                  "location": {
+                    "latitude": 28.6139,
+                    "longitude": 77.2090
+                  },
+                  "actionUrl": "https://app.rescuemesh.com/requests/sos-123"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notification sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/batch": {
+      "post": {
+        "tags": ["Notifications"],
+        "summary": "Send batch notifications",
+        "description": "Send notifications to multiple recipients at once",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchNotificationRequest"
+              },
+              "example": {
+                "recipients": [
+                  {
+                    "recipientId": "user-789",
+                    "recipientPhone": "+1234567890"
+                  },
+                  {
+                    "recipientId": "user-790",
+                    "recipientPhone": "+1234567891"
+                  }
+                ],
+                "channels": ["sms", "push"],
+                "type": "disaster_alert",
+                "data": {
+                  "disasterId": "disaster-123",
+                  "message": "New disaster alert in your area"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Batch notifications sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NotificationResponse"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/{notificationId}/status": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "Get notification status",
+        "description": "Check the delivery status of a notification",
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The notification ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationStatus"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Notification not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/user/{userId}": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "Get user notification history",
+        "description": "Retrieve notification history for a specific user",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The user ID"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Number of records to return"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Pagination offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification history retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "notifications": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NotificationHistory"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "NotificationRequest": {
+        "type": "object",
+        "required": ["recipientId", "type"],
+        "properties": {
+          "recipientId": {
+            "type": "string",
+            "description": "ID of the recipient user"
+          },
+          "recipientPhone": {
+            "type": "string",
+            "description": "Phone number of the recipient (for SMS)"
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["sms", "push", "whatsapp"]
+            },
+            "default": ["sms", "push"],
+            "description": "Communication channels to use"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["sos_match", "sos_request", "disaster_alert", "match_accepted"],
+            "description": "Type of notification"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "default": "medium",
+            "description": "Priority level"
+          },
+          "data": {
+            "type": "object",
+            "description": "Additional data for the notification",
+            "properties": {
+              "requestId": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "location": {
+                "$ref": "#/components/schemas/Location"
+              },
+              "actionUrl": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        }
+      },
+      "BatchNotificationRequest": {
+        "type": "object",
+        "required": ["recipients", "type"],
+        "properties": {
+          "recipients": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["recipientId"],
+              "properties": {
+                "recipientId": {
+                  "type": "string"
+                },
+                "recipientPhone": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["sms", "push", "whatsapp"]
+            },
+            "default": ["sms", "push"]
+          },
+          "type": {
+            "type": "string",
+            "enum": ["sos_match", "sos_request", "disaster_alert", "match_accepted"]
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "NotificationResponse": {
+        "type": "object",
+        "properties": {
+          "notificationId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["sent", "failed", "pending"]
+          },
+          "channels": {
+            "type": "object",
+            "description": "Status of each channel",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["sent", "delivered", "failed"]
+                },
+                "sentAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "deliveredAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "sentAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "NotificationStatus": {
+        "type": "object",
+        "properties": {
+          "notificationId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["sent", "failed", "pending"]
+          },
+          "channels": {
+            "type": "object",
+            "description": "Status of each channel"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sentAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "deliveredAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "NotificationHistory": {
+        "type": "object",
+        "properties": {
+          "notificationId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "channels": {
+            "type": "object"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sentAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "required": ["latitude", "longitude"],
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "float"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "float"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["healthy", "degraded", "unhealthy"]
+          },
+          "service": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "checks": {
+            "type": "object",
+            "properties": {
+              "database": {
+                "type": "string"
+              },
+              "redis": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
