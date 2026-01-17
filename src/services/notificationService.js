@@ -127,7 +127,7 @@ async function sendNotification(notificationData) {
 }
 
 /**
- * Send match notification
+ * Send match notification to volunteer
  */
 async function sendMatchNotification(data) {
   const { matchId, requestId, volunteerId, skillType, resourceType } = data;

@@ -1,0 +1,40 @@
+In the context of RescueMesh, the Notification Service acts as the nervous system of the platform. The reason there are four specific types of notifications is to handle the different stages of a disaster response lifecycle.
+
+Each type serves a unique purpose for different "actors" (Victims, Volunteers, and Authorities) and requires different levels of urgency.
+
+1. Match Notification (match.created)
+Target: The Volunteer.
+
+Scenario: The Intelligent Matching Service has found a perfect pair between a volunteer's skill (e.g., "Boat Rescue") and an active SOS request (e.g., "Family trapped in flood").
+
+Goal: To tell the volunteer, "We need you now at these coordinates." This is why it includes an actionUrl and location data.
+
+2. SOS Request Notification (sos_request)
+Target: Local Authorities or nearby highly-trained "First Responders."
+
+Scenario: A victim presses the SOS button.
+
+Goal: This is a raw alert. It bypasses the "matching" logic to ensure that nearby emergency services are aware that a life is in danger immediately, even before a specific volunteer is found.
+
+3. Disaster Alert (disaster_alert)
+Target: Everyone in a specific geographic radius.
+
+Scenario: The Disaster Event Service detects a new threat (e.g., a Tsunami warning or a fast-moving wildfire).
+
+Goal: Mass broadcasting. It is set to High Priority and uses every available channel (SMS + Push) to tell people to evacuate or take cover.
+
+4. Match Accepted Notification (match_accepted)
+Target: The Victim (or the person who requested help).
+
+Scenario: A volunteer has seen their "Match" notification and clicked "Accept."
+
+Goal: To provide psychological relief and tracking. It tells the victim, "Help is on the way." Usually, this is sent via Push only (to save SMS costs) because the victim is likely already looking at the app.
+
+Why the "Fallback Logic" is critical
+In a disaster, communication infrastructure is often the first thing to fail. Your code implements a "Resilient by Design" approach.
+
+Scenario A (Internet is working): The service sends a Push Notification. It’s free and can carry rich data (maps, photos).
+
+Scenario B (Cellular Data/WiFi fails): If the Push fails or the user is offline, the system falls back to SMS. SMS uses the "Control Channel" of cellular towers, which often works even when the internet is too slow to load a webpage.
+
+Scenario C (Total Network Collapse): If the service detects that neither Push nor SMS can reach the user, the logs are sent to the Authority Dashboard. Authorities can then use physical means (megaphones, sirens, or radio) to relay the information.
